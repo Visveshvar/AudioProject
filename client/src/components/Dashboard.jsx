@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { io } from "socket.io-client";
-
+import { useAuth } from "./AuthContext";
 const Dashboard = () => {
   const [machineData, setMachineData] = useState([]);
-
+  const {username}=useAuth();
   useEffect(() => {
     // Initialize the socket connection once on component mount
     const newSocket = io('http://127.0.0.1:5007', {
@@ -36,6 +36,16 @@ const Dashboard = () => {
       newSocket.disconnect();
     };
   }, []); // Empty dependency array ensures this runs only once
+
+  if(username!=="Visvesh")
+  {
+    return(
+      <div className="container mt-5">
+        <h2 className="text-center">Access Restricted</h2>
+        <p className="text-center">Only "Visvesh" can access the Dashboard.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container mt-5">

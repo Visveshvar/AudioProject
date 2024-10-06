@@ -7,10 +7,11 @@ const Notification=()=>{
 
     useEffect(()=>{
         const fetchFaults=async()=>{
-            if(username){
+            console.log(username)
+            if(username==="Visvesh"){
                 try{
                     const response=await axios.get('http://localhost:5007/faults',{
-                        params:{username}
+                        params:{username},
                     });
 
                     setfaults(response.data.faults)
@@ -24,6 +25,17 @@ const Notification=()=>{
         fetchFaults();
 
     },[username]);
+    
+    if(username!=="Visvesh")
+    {
+        return(
+            <div>
+                <h2>Notifications</h2>
+                <p>Access restricted. Only "Visvesh" can view notifications.</p>
+            </div>
+        )
+    }
+
     return(
         <div>
             <h2>Notifications</h2>
