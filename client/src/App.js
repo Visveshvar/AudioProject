@@ -34,11 +34,11 @@ function App() {
               <Route path='/login' element={<LogIn/>}></Route>
               <Route path='/' element={<User/>}></Route>
               <Route path='/home' element={<Navbar/>}>
-                <Route index element={ <HomeContent />}/>
-                <Route path='industry' element={<Industry/>}/>
-                <Route path='dashboard' element={<Dashboard/>}/>
-                <Route path='notification' element={<Notification/>}/>
-                <Route path='profile' element={<Profile/>}/>
+                <Route index element={ isAuthenticated?<HomeContent />:<Navigate to='/login'/>}/>
+                <Route path='industry' element={isAuthenticated?<Industry/>:<Navigate to='/login'/>}/>
+                <Route path='dashboard' element={isAuthenticated?<Dashboard/>:<Navigate to='/login'/>}/>
+                <Route path='notification' element={isAuthenticated?<Notification/>:<Navigate to='/login'/>}/>
+                <Route path='profile' element={isAuthenticated?<Profile/>:<Navigate to='/login'/>}/>
               </Route>
               
           </Routes>

@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "./AuthContext";
-
+import { useNavigate } from "react-router-dom";
 const Profile=()=>{
     const [userDetails,setUserDetails]=useState(null)
-    const [loading,setLoading]=useState(true)
-    const [error,setError]=useState("")
-    const {username}=useAuth()
+    const [loading,setLoading]=useState(true);
+    const [error,setError]=useState("");
+    const {username,logout}=useAuth();
+    const navigate=useNavigate();
     useEffect(()=>{
         const fetchUserDetails=async ()=>{
             try{
@@ -24,6 +25,19 @@ const Profile=()=>{
         };
         fetchUserDetails();
     },[username])
+
+    const handleLogout=async ()=>{
+        console.log("Logout intiated")
+        try{
+            await axios.post('http://localhost:5007/logout',{},{withCredentials:true});
+            logout()
+            navigate("/login")
+        }
+        catch (err) {
+            console.error("Error logging out", err);
+          }
+    }
+
     if (loading) return <div>Loading...</div>;
     if (error) return <div>{error}</div>;
     return(
@@ -34,6 +48,7 @@ const Profile=()=>{
             <p><strong>Username:</strong> {userDetails.username}</p>
             <p><strong>Full Name:</strong> {userDetails.fullname}</p>
             <p><strong>Email:</strong> {userDetails.email}</p>
+            <button className="btn btn-primary" onClick={handleLogout}>Logout</button>
           </div>
         ) : (
           <div>No user details available</div>
