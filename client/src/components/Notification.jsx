@@ -26,6 +26,21 @@ const Notification=()=>{
 
     },[username]);
     
+    const handleDeleteFault =async(faultId)=>{
+        try{
+            const response=await axios.delete(`http://localhost:5007/faults/${faultId}`,{
+                params:{username}
+            });
+            if(response.status==200){
+                setfaults((prevFaults)=>prevFaults.filter((fault)=> fault.fault_id!==faultId))
+            }
+        }
+        catch(error) {
+            console.error("Error deleting fault:", error);
+          }
+        
+    }
+
     if(username!=="Visvesh")
     {
         return(
@@ -45,6 +60,8 @@ const Notification=()=>{
                         <div key={index} className="fault-card">
                             <h3>Machine: {fault.machine_name}</h3>
                             <p>Fault Time: {fault.fault_time}</p>
+
+                            <button onClick={() => handleDeleteFault(fault.fault_id)}>Delete</button>
                         </div>
                     ))
                 ) : (

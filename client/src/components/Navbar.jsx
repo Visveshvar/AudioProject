@@ -15,7 +15,7 @@ var Navbar = () => {
                 </ul>
             </nav>
             <Outlet/>
-        </div>
+        </div>  
     )
 }
 export default Navbar 

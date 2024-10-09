@@ -14,6 +14,8 @@ import Dashboard from './components/Dashboard';
 import Notification from './components/Notification';
 import Profile from './components/Profile';
 import { WebsocketProvider } from './components/WebContext';
+import PlantManager from './components/Industry';
+import MachineAnalytics from './components/Machineanalytics';
 function App() {
   // const [data,setData]=useState([])
   // useEffect(()=>{
@@ -25,7 +27,8 @@ function App() {
   //     console.error("Error fetching the member data: ",error);
   //   });
   // },[])
-  const {isAuthenticated}=useAuth()
+  //const {isAuthenticated}=useAuth()
+  const isAuthenticated=true
   return (
     <div >
       <BrowserRouter>
@@ -35,11 +38,12 @@ function App() {
               <Route path='/' element={<User/>}></Route>
               <Route path='/home' element={<Navbar/>}>
                 <Route index element={ isAuthenticated?<HomeContent />:<Navigate to='/login'/>}/>
-                <Route path='industry' element={isAuthenticated?<Industry/>:<Navigate to='/login'/>}/>
+                <Route path='industry' element={isAuthenticated?<PlantManager/>:<Navigate to='/login'/>}/>
                 <Route path='dashboard' element={isAuthenticated?<Dashboard/>:<Navigate to='/login'/>}/>
                 <Route path='notification' element={isAuthenticated?<Notification/>:<Navigate to='/login'/>}/>
                 <Route path='profile' element={isAuthenticated?<Profile/>:<Navigate to='/login'/>}/>
               </Route>
+                <Route path='machine-analytics/:machineId' element={isAuthenticated ? <MachineAnalytics /> : <Navigate to='/login' />} />
               
           </Routes>
         </BrowserRouter>

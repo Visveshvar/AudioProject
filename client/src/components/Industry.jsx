@@ -1,215 +1,404 @@
-import React, { useState } from "react";
-import '../CSS/Button.css'; // Import your custom button styles
-import 'bootstrap/dist/css/bootstrap.min.css';
-import { Link } from "react-router-dom";
-const Industry = () => {
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import "bootstrap/dist/css/bootstrap.min.css";
+import { useAuth } from "./AuthContext";
 
-  const [plants, setPlants] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [currentPlant, setCurrentPlant] = useState({ name: "", description: "" });
-  const [editIndex, setEditIndex] = useState(null);
-  const [showInfo, setShowInfo] = useState({ visible: false, description: "" });
+const PlantManager = () => {
+  const [plantName, setPlantName] = useState("");
+  const [plantDescription, setPlantDescription] = useState("");
+  const [isPlantCreated, setIsPlantCreated] = useState(false);
+  const [zones, setZones] = useState([]);
+  const [newZoneName, setNewZoneName] = useState("");
+  const [newZoneDescription, setNewZoneDescription] = useState("");
+  const [selectedZoneIndex, setSelectedZoneIndex] = useState(null);
+  const [machineName, setMachineName] = useState("");
+  const [micIndex, setMicIndex] = useState("");
+  const [machineDescription, setMachineDescription] = useState("");
+  const [isEditing, setIsEditing] = useState(true);
 
-  // Function to handle adding or updating a plant card
-  const handleFormSubmit = (e) => {
-    e.preventDefault();
-    if (editIndex !== null) {
-      const updatedPlants = plants.map((plant, index) =>
-        index === editIndex ? { name: currentPlant.name, description: currentPlant.description } : plant
-      );
-      setPlants(updatedPlants);
-    } else {
-      setPlants([...plants, currentPlant]);
+  const [editingZoneIndex, setEditingZoneIndex] = useState(null);
+  const [editingMachineIndex, setEditingMachineIndex] = useState(null);
+  const [editedZoneName, setEditedZoneName] = useState("");
+  const [editedZoneDescription, setEditedZoneDescription] = useState("");
+  const [editedMachineName, setEditedMachineName] = useState("");
+  const [editedMicIndex, setEditedMicIndex] = useState("");
+  const [editedMachineDescription, setEditedMachineDescription] = useState("");
+
+  const { username } = useAuth();
+
+  useEffect(()=>{
+    const fetchPlantDetails= async ()=>{
+      try{
+        const response=await axios.get("http://localhost:5007/plant",{
+          params:{username}
+        });
+        const plantData=response.data.plantdata;
+
+        if(plantData){
+          setPlantName(plantData.plantname);
+          setPlantDescription(plantData.plantdescription);
+          setZones(plantData.zones || [])
+          setIsPlantCreated(true)
+        }
+      }catch(error)
+      {
+        console.log("Error fetching plant data",error)
+      }
     }
-    setShowForm(false);
-    setCurrentPlant({ name: "", description: "" });
-    setEditIndex(null);
+    fetchPlantDetails();
+  },[])
+
+  const handleCreatePlant = () => {
+    if (plantName.trim() && plantDescription.trim()) {
+      setIsPlantCreated(true);
+    }
   };
 
-  // Function to open the form for adding a new plant
-  const addPlant = () => {
-    setCurrentPlant({ name: "", description: "" });
-    setEditIndex(null);
-    setShowForm(true);
+  const addZone = () => {
+    if (newZoneName.trim() && newZoneDescription.trim()) {
+      setZones((prevZones) => [
+        ...prevZones,
+        { zoneName: newZoneName, zoneDescription: newZoneDescription, machines: [] },
+      ]);
+      setNewZoneName("");
+      setNewZoneDescription("");
+      setSelectedZoneIndex(zones.length);
+    }
   };
 
-  // Function to delete a specific plant card
-  const deletePlant = (index) => {
-    const updatedPlants = plants.filter((_, i) => i !== index);
-    setPlants(updatedPlants);
+  const handleZoneSelect = (index) => {
+    setSelectedZoneIndex(index);
   };
 
-  // Function to handle editing a specific plant card
-  const editPlant = (index) => {
-    setCurrentPlant(plants[index]);
-    setEditIndex(index);
-    setShowForm(true);
+  const handleAddMachine = () => {
+    if (
+      selectedZoneIndex !== null &&
+      machineName.trim() &&
+      micIndex.trim() &&
+      machineDescription.trim()
+    ) {
+      const updatedZones = zones.map((zone, index) => {
+        if (index === selectedZoneIndex) {
+          return {
+            ...zone,
+            machines: [
+              ...zone.machines,
+              { machineName, micIndex: parseInt(micIndex), machineDescription },
+            ],
+          };
+        }
+        return zone;
+      });
+      setZones(updatedZones);
+      setMachineName("");
+      setMicIndex("");
+      setMachineDescription("");
+    }
   };
 
-  // Function to display info for a specific plant card
-  const showPlantInfo = (description) => {
-    setShowInfo({ visible: true, description });
+  const handleSave = () => {
+    setIsEditing(false);
+    sendDataToBackend();
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const sendDataToBackend = async () => {
+    try {
+      const dataToSend = {
+        username,
+        plantName,
+        plantDescription,
+        zones,
+      };
+      console.log(dataToSend)
+      const response = await axios.post("http://localhost:5007/industry", dataToSend);
+      console.log("Data sent successfully", response.data);
+    } catch (error) {
+      console.error("Error sending data to backend", error);
+    }
+  };
+
+  const handleZoneEdit = (index) => {
+    setEditingZoneIndex(index);
+    setEditedZoneName(zones[index].zoneName);
+    setEditedZoneDescription(zones[index].zoneDescription);
+  };
+
+  const handleMachineEdit = (zoneIndex, machineIndex) => {
+    setEditingMachineIndex(machineIndex);
+    const machine = zones[zoneIndex].machines[machineIndex];
+    setEditedMachineName(machine.machineName);
+    setEditedMicIndex(machine.micIndex);
+    setEditedMachineDescription(machine.machineDescription);
+  };
+
+  const handleZoneUpdate = (index) => {
+    const updatedZones = zones.map((zone, i) => {
+      if (i === index) {
+        return { ...zone, zoneName: editedZoneName, zoneDescription: editedZoneDescription };
+      }
+      return zone;
+    });
+    setZones(updatedZones);
+    setEditingZoneIndex(null); // Exit editing mode after update
+  };
+
+  const handleMachineUpdate = (zoneIndex, machineIndex) => {
+    const updatedZones = zones.map((zone, i) => {
+      if (i === zoneIndex) {
+        const updatedMachines = zone.machines.map((machine, j) => {
+          if (j === machineIndex) {
+            return {
+              ...machine,
+              machineName: editedMachineName,
+              micIndex: editedMicIndex,
+              machineDescription: editedMachineDescription,
+            };
+          }
+          return machine;
+        });
+        return { ...zone, machines: updatedMachines };
+      }
+      return zone;
+    });
+    setZones(updatedZones);
+    setEditingMachineIndex(null); // Exit editing mode after update
   };
 
   return (
-    <div>
-      <div className="container mt-4">
-        {/* Button to add a new plant */}
-        <button className="button mb-3" type="button" onClick={addPlant}>
-          <span className="button__text">Add Plant</span>
-          <span className="button__icon">
-            <svg
-              className="svg"
-              fill="none"
-              height="24"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              width="24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <line x1="12" x2="12" y1="5" y2="19"></line>
-              <line x1="5" x2="19" y1="12" y2="12"></line>
-            </svg>
-          </span>
-        </button>
-
-        {/* Dynamic plant cards */}
-        <div className="row">
-          {plants.map((plant, index) => (
-            <div className="col-12 mb-3" key={index}>
-              {/* Reduced width for the card */}
-              <div className="card p-3" style={{ maxWidth: '600px', margin: '0 auto' }}>
-                <div className="d-flex align-items-center justify-content-between">
-                  {/* Left Section: Edit Icon and Plant Name */}
-                  <div className="d-flex align-items-center">
-                    {/* Edit Icon */}
-                    <span
-                      className="material-icons text-dark me-3"
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => editPlant(index)}
-                      title="Edit"
-                    >
-                      edit
-                    </span>
-                    {/* Plant Name */}
-                    <h5 className="card-title m-0">{plant.name}</h5>
-                  </div>
-
-                  {/* Right Section: Analytics, Info, and Delete Icons */}
-                  <div className="d-flex">
-                    {/* Info Icon */}
-                    <span
-                      className="material-icons text-dark me-2"
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => showPlantInfo(plant.description)}
-                      title="Info"
-                    >
-                      info
-                    </span>
-
-                    {/* Delete Icon */}
-                    <span
-                      className="material-icons text-dark"
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => deletePlant(index)}
-                      title="Delete"
-                    >
-                      delete
-                    </span>
-                  </div>
-                </div>
-
-                {/* "View Plant" Button */}
-                <div className="d-flex justify-content-end mt-3">
-                  <Link to='home/industry/plant'>
-                  <button
-                    className="view-plant-small-btn"
-                    onClick={() => showPlantInfo(plant.description)}
-                  >
-                    <span>View Plant</span>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 74 74"
-                      height="34"
-                      width="34"
-                    >
-                      <circle strokeWidth="3" stroke="black" r="35.5" cy="37" cx="37"></circle>
-                      <path
-                        fill="black"
-                        d="M25 35.5C24.1716 35.5 23.5 36.1716 23.5 37C23.5 37.8284 24.1716 38.5 25 38.5V35.5ZM49.0607 38.0607C49.6464 37.4749 49.6464 36.5251 49.0607 35.9393L39.5147 26.3934C38.9289 25.8076 37.9792 25.8076 37.3934 26.3934C36.8076 26.9792 36.8076 27.9289 37.3934 28.5147L45.8787 37L37.3934 45.4853C36.8076 46.0711 36.8076 47.0208 37.3934 47.6066C37.9792 48.1924 38.9289 48.1924 39.5147 47.6066L49.0607 38.0607ZM25 38.5L48 38.5V35.5L25 35.5V38.5Z"
-                      ></path>
-                    </svg>
-                  </button>
-                  </Link>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Modal/Form to Add/Edit Plant */}
-      {showForm && (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">{editIndex !== null ? 'Edit Plant' : 'Add Plant'}</h5>
-                <button type="button" className="btn-close" onClick={() => setShowForm(false)}></button>
-              </div>
-              <div className="modal-body">
-                <form onSubmit={handleFormSubmit}>
-                  <div className="mb-3">
-                    <label className="form-label">Plant Name</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={currentPlant.name}
-                      onChange={(e) => setCurrentPlant({ ...currentPlant, name: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Description</label>
-                    <textarea
-                      className="form-control"
-                      rows="3"
-                      value={currentPlant.description}
-                      onChange={(e) => setCurrentPlant({ ...currentPlant, description: e.target.value })}
-                      required
-                    ></textarea>
-                  </div>
-                  <button type="submit" className="btn btn-primary">
-                    {editIndex !== null ? 'Update' : 'Add'}
-                  </button>
-                </form>
-              </div>
-            </div>
+    <div className="container-fluid my-5" style={{ height: "calc(100vh - 70px)" }}>
+      {!isPlantCreated && (
+        <div className="card p-4 mb-4">
+          <div className="mb-3">
+            <label className="form-label">Plant Name:</label>
+            <input
+              type="text"
+              className="form-control"
+              value={plantName}
+              onChange={(e) => setPlantName(e.target.value)}
+              placeholder="Enter plant name"
+            />
           </div>
+          <div className="mb-3">
+            <label className="form-label">Plant Description:</label>
+            <textarea
+              className="form-control"
+              value={plantDescription}
+              onChange={(e) => setPlantDescription(e.target.value)}
+              placeholder="Enter plant description"
+            ></textarea>
+          </div>
+          <button className="btn btn-primary" onClick={handleCreatePlant}>
+            Create Plant
+          </button>
         </div>
       )}
 
-      {/* Info Modal */}
-      {showInfo.visible && (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Plant Info</h5>
-                <button type="button" className="btn-close" onClick={() => setShowInfo({ visible: false, description: "" })}></button>
+      {isPlantCreated && (
+        <div className="row" style={{ height: "100%" }}>
+          <div className="col-md-4" style={{ paddingRight: "20px" }}>
+            <div className="card p-4 mb-4" style={{ height: "100%" }}>
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h3 className="mb-0">{plantName}</h3>
+                {isEditing && (
+                  <button className="btn btn-danger" onClick={handleSave}>
+                    Save
+                  </button>
+                )}
+                {isPlantCreated && !isEditing && (
+                  <div className="d-flex justify-content-between mt-3">
+                    <button className="btn btn-primary btn-sm" onClick={handleEdit}>
+                      Edit
+                    </button>
+                  </div>
+                )}
               </div>
-              <div className="modal-body">
-                <p>{showInfo.description}</p>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowInfo({ visible: false, description: "" })}>
-                  Close
-                </button>
-              </div>
+              <h5 className="mb-3">Zones</h5>
+
+              {zones.length > 0 ? (
+                <ul className="list-group mb-3">
+                  {zones.map((zone, index) => (
+                    <li
+                      key={index}
+                      className="list-group-item d-flex justify-content-between align-items-center"
+                      style={{ cursor: "pointer", padding: "10px", marginBottom: "10px" }}
+                      onClick={() => handleZoneSelect(index)}
+                    >
+                      {editingZoneIndex === index ? (
+                        <>
+                          <input
+                            type="text"
+                            value={editedZoneName}
+                            onChange={(e) => setEditedZoneName(e.target.value)}
+                            placeholder="Edit zone name"
+                          />
+                          <input
+                            type="text"
+                            value={editedZoneDescription}
+                            onChange={(e) => setEditedZoneDescription(e.target.value)}
+                            placeholder="Edit zone description"
+                          />
+                          <button
+                            className="btn btn-sm btn-success"
+                            onClick={() => handleZoneUpdate(index)}
+                          >
+                            Save
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <span>{zone.zoneName}</span>
+                          {isEditing && (
+                            <button
+                              className="btn btn-sm btn-warning"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleZoneEdit(index);
+                              }}
+                            >
+                              Edit
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>No zones added yet.</p>
+              )}
+
+              {isEditing && (
+                <div>
+                  <div className="mb-3">
+                    <label className="form-label">Zone Name:</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={newZoneName}
+                      onChange={(e) => setNewZoneName(e.target.value)}
+                      placeholder="Enter zone name"
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">Zone Description:</label>
+                    <textarea
+                      className="form-control"
+                      value={newZoneDescription}
+                      onChange={(e) => setNewZoneDescription(e.target.value)}
+                      placeholder="Enter zone description"
+                    ></textarea>
+                  </div>
+                  <button className="btn btn-success btn-sm mb-3" onClick={addZone}>
+                    Add Zone
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="col-md-8">
+            <div className="card p-4" style={{ height: "100%" }}>
+              {selectedZoneIndex !== null ? (
+                <>
+                  <h5>Machines in {zones[selectedZoneIndex].zoneName}</h5>
+                  <ul className="list-group">
+                    {zones[selectedZoneIndex].machines.length > 0 ? (
+                      zones[selectedZoneIndex].machines.map((machine, index) => (
+                        <li
+                          key={index}
+                          className="list-group-item d-flex justify-content-between align-items-center"
+                        >
+                          {editingMachineIndex === index ? (
+                            <>
+                              <input
+                                type="text"
+                                value={editedMachineName}
+                                onChange={(e) => setEditedMachineName(e.target.value)}
+                                placeholder="Edit machine name"
+                              />
+                              <input
+                                type="number"
+                                value={editedMicIndex}
+                                onChange={(e) => setEditedMicIndex(e.target.value)}
+                                placeholder="Edit mic index"
+                              />
+                              <input
+                                type="text"
+                                value={editedMachineDescription}
+                                onChange={(e) => setEditedMachineDescription(e.target.value)}
+                                placeholder="Edit machine description"
+                              />
+                              <button
+                                className="btn btn-sm btn-success"
+                                onClick={() => handleMachineUpdate(selectedZoneIndex, index)}
+                              >
+                                Save
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <span>{machine.machineName}</span>
+                              {isEditing && (
+                                <button
+                                  className="btn btn-sm btn-warning"
+                                  onClick={() => handleMachineEdit(selectedZoneIndex, index)}
+                                >
+                                  Edit
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </li>
+                      ))
+                    ) : (
+                      <p>No machines added yet.</p>
+                    )}
+                  </ul>
+
+                  {isEditing && (
+                    <div>
+                      <div className="mb-3">
+                        <label className="form-label">Machine Name:</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={machineName}
+                          onChange={(e) => setMachineName(e.target.value)}
+                          placeholder="Enter machine name"
+                        />
+                      </div>
+                      <div className="mb-3">
+                        <label className="form-label">Mic Index:</label>
+                        <input
+                          type="number"
+                          className="form-control"
+                          value={micIndex}
+                          onChange={(e) => setMicIndex(e.target.value)}
+                          placeholder="Enter mic index"
+                        />
+                      </div>
+                      <div className="mb-3">
+                        <label className="form-label">Machine Description:</label>
+                        <textarea
+                          className="form-control"
+                          value={machineDescription}
+                          onChange={(e) => setMachineDescription(e.target.value)}
+                          placeholder="Enter machine description"
+                        ></textarea>
+                      </div>
+                      <button className="btn btn-success btn-sm mb-3" onClick={handleAddMachine}>
+                        Add Machine
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p>Select a zone to view and manage machines.</p>
+              )}
             </div>
           </div>
         </div>
@@ -218,4 +407,4 @@ const Industry = () => {
   );
 };
 
-export default Industry;
+export default PlantManager;

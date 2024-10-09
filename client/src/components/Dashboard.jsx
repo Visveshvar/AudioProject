@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import { useAuth } from "./AuthContext";
+import { useNavigate } from "react-router-dom";
 const Dashboard = () => {
   const [machineData, setMachineData] = useState([]);
   const {username}=useAuth();
+  const navigate=useNavigate();
   useEffect(() => {
     // Initialize the socket connection once on component mount
     const newSocket = io('http://127.0.0.1:5007', {
@@ -37,6 +39,11 @@ const Dashboard = () => {
     };
   }, []); // Empty dependency array ensures this runs only once
 
+  const handleAnalytics = (machine) => {
+    // Navigate to the MachineAnalytics component with machine_name as a URL parameter
+    navigate(`/machine-analytics/${machine.machineId}`);
+  };
+
   if(username!=="Visvesh")
   {
     return(
@@ -57,6 +64,7 @@ const Dashboard = () => {
             <th>Status</th>
             <th>Health</th>
             <th>Zone</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>
@@ -67,6 +75,9 @@ const Dashboard = () => {
                 <td>{machine.status}</td>
                 <td>{machine.health}</td>
                 <td>{machine.zone}</td>
+                <td>
+                  <button className="btn btn-primary" onClick={()=>handleAnalytics(machine)}>Analytics</button>
+                </td>
               </tr>
             ))
           ) : (
